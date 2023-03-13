@@ -1,0 +1,1 @@
+{"version":3,"file":"app-video.d.ts","sourceRoot":"","sources":["../../src/videoCall/app-video.ts"],"names":[],"mappings":"AAAA,OAAO,EAAC,UAAU,EAAY,MAAM,KAAK,CAAC;AAG1C,qBACa,YAAa,SAAQ,UAAU;IAC1C,OAAgB,MAAM,0BAqIpB;IAGF,WAAW,EAAE,gBAAgB,GAAG,SAAS,CAAC;IAG1C,MAAM,UAAS;IAEf,aAAa,EAAE,SAAS,CAAC;IAEzB,aAAa;;;;;;;;;;MAWX;;IAoDI,QAAQ;IAWL,MAAM;CAqChB"}
