@@ -7,10 +7,30 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 import { LitElement, html } from 'lit';
 import { customElement } from 'lit/decorators.js';
 let UserProfile = class UserProfile extends LitElement {
+    constructor() {
+        super(...arguments);
+        this.edit = false;
+    }
+    editToggle() {
+        this.edit = !this.edit;
+        this.requestUpdate();
+    }
     createRenderRoot() {
         return this;
     }
+    connectedCallback() {
+        const userString = localStorage.getItem('user');
+        if (userString) {
+            this.user = JSON.parse(userString);
+        }
+        else {
+            localStorage.clear();
+            location.href = '/rtcapp';
+        }
+        super.connectedCallback();
+    }
     render() {
+        var _a, _b, _c, _d, _e, _f, _g;
         return html `
       <div class="container py-5">
         <div class="row">
@@ -23,15 +43,10 @@ let UserProfile = class UserProfile extends LitElement {
                   class="rounded-circle img-fluid"
                   style="width: 150px;"
                 />
-                <h5 class="my-3">John Smith</h5>
-                <p class="text-muted mb-1">Full Stack Developer</p>
-                <p class="text-muted mb-4">Bay Area, San Francisco, CA</p>
-                <div class="d-flex justify-content-center mb-2">
-                  <button type="button" class="btn btn-primary">Follow</button>
-                  <button type="button" class="btn btn-outline-primary ms-1">
-                    Message
-                  </button>
-                </div>
+                <h5 class="my-3">${(_a = this.user) === null || _a === void 0 ? void 0 : _a.username}</h5>
+                <p class="text-muted mb-1">
+                  ${(_b = this.user) === null || _b === void 0 ? void 0 : _b.firstname} ${(_c = this.user) === null || _c === void 0 ? void 0 : _c.lastname}
+                </p>
               </div>
             </div>
           </div>
@@ -39,48 +54,125 @@ let UserProfile = class UserProfile extends LitElement {
             <div class="card mb-4">
               <div class="card-body">
                 <div class="row">
-                  <div class="col-sm-3">
-                    <p class="mb-0">Full Name</p>
-                  </div>
-                  <div class="col-sm-9">
-                    <p class="text-muted mb-0">Johnatan Smith</p>
-                  </div>
+                  ${this.edit
+            ? html `
+                        <div class="d-flex flex-row align-items-center">
+                          <div class="form-outline flex-fill mb-0">
+                            <input
+                              required
+                              type="text"
+                              id="username"
+                              class="form-control"
+                            />
+                            <label class="form-label" for="username"
+                              >Username</label
+                            >
+                          </div>
+                        </div>
+                      `
+            : html ` <div class="col-sm-3">
+                          <p class="mb-0">Username</p>
+                        </div>
+                        <div class="col-sm-9">
+                          <p class="text-muted mb-0">${(_d = this.user) === null || _d === void 0 ? void 0 : _d.username}</p>
+                        </div>`}
                 </div>
                 <hr />
                 <div class="row">
-                  <div class="col-sm-3">
-                    <p class="mb-0">Email</p>
-                  </div>
-                  <div class="col-sm-9">
-                    <p class="text-muted mb-0">example@example.com</p>
-                  </div>
+                  ${this.edit
+            ? html `
+                        <div class="d-flex flex-row align-items-center">
+                          <div class="form-outline flex-fill mb-0">
+                            <input
+                              required
+                              type="text"
+                              id="firstname"
+                              class="form-control"
+                            />
+                            <label class="form-label" for="firstname"
+                              >FirstName</label
+                            >
+                          </div>
+                          <hr />
+                        </div>
+                        <div class="d-flex flex-row align-items-center">
+                          <div class="form-outline flex-fill mb-0">
+                            <input
+                              required
+                              type="text"
+                              id="lastname"
+                              class="form-control"
+                            />
+                            <label class="form-label" for="lastname"
+                              >Lastname</label
+                            >
+                          </div>
+                        </div>
+                      `
+            : html ` <div class="col-sm-3">
+                          <p class="mb-0">First Name</p>
+                        </div>
+                        <div class="col-sm-3">
+                          <p class="text-muted mb-0">${(_e = this.user) === null || _e === void 0 ? void 0 : _e.firstname}</p>
+                        </div>
+                        <div class="col-sm-3">
+                          <p class="mb-0">Last Name</p>
+                        </div>
+                        <div class="col-sm-3">
+                          <p class="text-muted mb-0">${(_f = this.user) === null || _f === void 0 ? void 0 : _f.lastname}</p>
+                        </div>`}
                 </div>
                 <hr />
                 <div class="row">
-                  <div class="col-sm-3">
-                    <p class="mb-0">Phone</p>
-                  </div>
-                  <div class="col-sm-9">
-                    <p class="text-muted mb-0">(097) 234-5678</p>
-                  </div>
+                  ${this.edit
+            ? html `
+                        <div class="d-flex flex-row align-items-center">
+                          <div class="form-outline flex-fill mb-0">
+                            <input
+                              required
+                              type="email"
+                              id="email"
+                              class="form-control"
+                            />
+                            <label class="form-label" for="pass">Email</label>
+                          </div>
+                        </div>
+                      `
+            : html ` <div class="col-sm-3">
+                          <p class="mb-0">Email</p>
+                        </div>
+                        <div class="col-sm-9">
+                          <p class="text-muted mb-0">${(_g = this.user) === null || _g === void 0 ? void 0 : _g.email}</p>
+                        </div>`}
                 </div>
-                <hr />
-                <div class="row">
-                  <div class="col-sm-3">
-                    <p class="mb-0">Mobile</p>
-                  </div>
-                  <div class="col-sm-9">
-                    <p class="text-muted mb-0">(098) 765-4321</p>
-                  </div>
-                </div>
-                <hr />
-                <div class="row">
-                  <div class="col-sm-3">
-                    <p class="mb-0">Address</p>
-                  </div>
-                  <div class="col-sm-9">
-                    <p class="text-muted mb-0">Bay Area, San Francisco, CA</p>
-                  </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4"></div>
+          <div class="col-lg-8 ">
+            <div class="card mb-4">
+              <div class="card-body">
+                <div class="d-flex justify-content-center mb-2 ">
+                  <button
+                    type="button"
+                    @click="${this.editToggle}"
+                    class="btn btn-primary"
+                  >
+                    <i
+                      class="fas ${!this.edit
+            ? 'fa-pen'
+            : 'fa-save'} fa-lg me-3 fa-fw"
+                    ></i>
+                    ${!this.edit ? 'Edit' : 'Save'} Account
+                  </button>
+                  <button type="button" class="btn btn-outline-primary ms-1">
+                    <i class="fas fa-key fa-lg me-3 fa-fw"></i>
+                    Change Password
+                  </button>
+                  <button type="button" class="btn btn-outline-danger ms-1">
+                    <i class="fas fa-trash fa-lg me-3 fa-fw"></i>
+                    Delete account
+                  </button>
                 </div>
               </div>
             </div>

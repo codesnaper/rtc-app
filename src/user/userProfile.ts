@@ -1,10 +1,31 @@
 import {LitElement, html} from 'lit';
 import {customElement} from 'lit/decorators.js';
+import {User} from '../model';
 
 @customElement('user-profile')
 export class UserProfile extends LitElement {
+  user: User | undefined;
+
+  edit = false;
+
+  editToggle() {
+    this.edit = !this.edit;
+    this.requestUpdate();
+  }
+
   override createRenderRoot() {
     return this;
+  }
+
+  override connectedCallback(): void {
+    const userString = localStorage.getItem('user');
+    if (userString) {
+      this.user = JSON.parse(userString);
+    } else {
+      localStorage.clear();
+      location.href = '/rtcapp';
+    }
+    super.connectedCallback();
   }
 
   override render() {
@@ -20,15 +41,10 @@ export class UserProfile extends LitElement {
                   class="rounded-circle img-fluid"
                   style="width: 150px;"
                 />
-                <h5 class="my-3">John Smith</h5>
-                <p class="text-muted mb-1">Full Stack Developer</p>
-                <p class="text-muted mb-4">Bay Area, San Francisco, CA</p>
-                <div class="d-flex justify-content-center mb-2">
-                  <button type="button" class="btn btn-primary">Follow</button>
-                  <button type="button" class="btn btn-outline-primary ms-1">
-                    Message
-                  </button>
-                </div>
+                <h5 class="my-3">${this.user?.username}</h5>
+                <p class="text-muted mb-1">
+                  ${this.user?.firstname} ${this.user?.lastname}
+                </p>
               </div>
             </div>
           </div>
@@ -36,48 +52,125 @@ export class UserProfile extends LitElement {
             <div class="card mb-4">
               <div class="card-body">
                 <div class="row">
-                  <div class="col-sm-3">
-                    <p class="mb-0">Full Name</p>
-                  </div>
-                  <div class="col-sm-9">
-                    <p class="text-muted mb-0">Johnatan Smith</p>
-                  </div>
+                  ${this.edit
+                    ? html`
+                        <div class="d-flex flex-row align-items-center">
+                          <div class="form-outline flex-fill mb-0">
+                            <input
+                              required
+                              type="text"
+                              id="username"
+                              class="form-control"
+                            />
+                            <label class="form-label" for="username"
+                              >Username</label
+                            >
+                          </div>
+                        </div>
+                      `
+                    : html` <div class="col-sm-3">
+                          <p class="mb-0">Username</p>
+                        </div>
+                        <div class="col-sm-9">
+                          <p class="text-muted mb-0">${this.user?.username}</p>
+                        </div>`}
                 </div>
                 <hr />
                 <div class="row">
-                  <div class="col-sm-3">
-                    <p class="mb-0">Email</p>
-                  </div>
-                  <div class="col-sm-9">
-                    <p class="text-muted mb-0">example@example.com</p>
-                  </div>
+                  ${this.edit
+                    ? html`
+                        <div class="d-flex flex-row align-items-center">
+                          <div class="form-outline flex-fill mb-0">
+                            <input
+                              required
+                              type="text"
+                              id="firstname"
+                              class="form-control"
+                            />
+                            <label class="form-label" for="firstname"
+                              >FirstName</label
+                            >
+                          </div>
+                          <hr />
+                        </div>
+                        <div class="d-flex flex-row align-items-center">
+                          <div class="form-outline flex-fill mb-0">
+                            <input
+                              required
+                              type="text"
+                              id="lastname"
+                              class="form-control"
+                            />
+                            <label class="form-label" for="lastname"
+                              >Lastname</label
+                            >
+                          </div>
+                        </div>
+                      `
+                    : html` <div class="col-sm-3">
+                          <p class="mb-0">First Name</p>
+                        </div>
+                        <div class="col-sm-3">
+                          <p class="text-muted mb-0">${this.user?.firstname}</p>
+                        </div>
+                        <div class="col-sm-3">
+                          <p class="mb-0">Last Name</p>
+                        </div>
+                        <div class="col-sm-3">
+                          <p class="text-muted mb-0">${this.user?.lastname}</p>
+                        </div>`}
                 </div>
                 <hr />
                 <div class="row">
-                  <div class="col-sm-3">
-                    <p class="mb-0">Phone</p>
-                  </div>
-                  <div class="col-sm-9">
-                    <p class="text-muted mb-0">(097) 234-5678</p>
-                  </div>
+                  ${this.edit
+                    ? html`
+                        <div class="d-flex flex-row align-items-center">
+                          <div class="form-outline flex-fill mb-0">
+                            <input
+                              required
+                              type="email"
+                              id="email"
+                              class="form-control"
+                            />
+                            <label class="form-label" for="pass">Email</label>
+                          </div>
+                        </div>
+                      `
+                    : html` <div class="col-sm-3">
+                          <p class="mb-0">Email</p>
+                        </div>
+                        <div class="col-sm-9">
+                          <p class="text-muted mb-0">${this.user?.email}</p>
+                        </div>`}
                 </div>
-                <hr />
-                <div class="row">
-                  <div class="col-sm-3">
-                    <p class="mb-0">Mobile</p>
-                  </div>
-                  <div class="col-sm-9">
-                    <p class="text-muted mb-0">(098) 765-4321</p>
-                  </div>
-                </div>
-                <hr />
-                <div class="row">
-                  <div class="col-sm-3">
-                    <p class="mb-0">Address</p>
-                  </div>
-                  <div class="col-sm-9">
-                    <p class="text-muted mb-0">Bay Area, San Francisco, CA</p>
-                  </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4"></div>
+          <div class="col-lg-8 ">
+            <div class="card mb-4">
+              <div class="card-body">
+                <div class="d-flex justify-content-center mb-2 ">
+                  <button
+                    type="button"
+                    @click="${this.editToggle}"
+                    class="btn btn-primary"
+                  >
+                    <i
+                      class="fas ${!this.edit
+                        ? 'fa-pen'
+                        : 'fa-save'} fa-lg me-3 fa-fw"
+                    ></i>
+                    ${!this.edit ? 'Edit' : 'Save'} Account
+                  </button>
+                  <button type="button" class="btn btn-outline-primary ms-1">
+                    <i class="fas fa-key fa-lg me-3 fa-fw"></i>
+                    Change Password
+                  </button>
+                  <button type="button" class="btn btn-outline-danger ms-1">
+                    <i class="fas fa-trash fa-lg me-3 fa-fw"></i>
+                    Delete account
+                  </button>
                 </div>
               </div>
             </div>
