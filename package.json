@@ -8,6 +8,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
+    "start": "npx nodemon",
     "build:watch": "tsc --watch",
     "clean": "rimraf dist test/my-element.{d.ts,d.ts.map,js,js.map} test/my-element_test.{d.ts,d.ts.map,js,js.map}",
     "lint": "npm run lint:lit-analyzer && npm run lint:eslint",
@@ -23,7 +24,7 @@
     "docs:serve": "wds --root-dir=docs --node-resolve --watch",
     "analyze": "cem analyze --litelement --globs \"src/**/*.ts\"",
     "analyze:watch": "cem analyze --litelement --globs \"src/**/*.ts\" --watch",
-    "serve": "wds --watch",
+    "serve": "wds --watch --static-directory dev",
     "serve:prod": "MODE=prod npm run serve",
     "test": "npm run test:dev && npm run test:prod",
     "test:dev": "wtr",
@@ -42,7 +43,9 @@
   "license": "BSD-3-Clause",
   "dependencies": {
     "@lit-element-bootstrap/layout": "^1.0.0-alpha.4",
-    "lit": "^2.2.4"
+    "buffer": "^6.0.3",
+    "lit": "^2.2.4",
+    "mongodb": "5.1"
   },
   "devDependencies": {
     "@11ty/eleventy": "^1.0.1",
@@ -60,6 +63,7 @@
     "@webcomponents/webcomponentsjs": "^2.6.0",
     "eslint": "^8.15.0",
     "lit-analyzer": "^1.2.1",
+    "nodemon": "^2.0.21",
     "prettier": "^2.6.2",
     "rimraf": "^3.0.2",
     "rollup": "^2.73.0",

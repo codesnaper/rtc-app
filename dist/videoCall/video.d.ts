@@ -1,7 +1,6 @@
 import { LitElement } from 'lit';
 import { LoginUser, UserStatus } from '../model';
-export declare class AppVideoCall extends LitElement {
-    static styles: import("lit").CSSResult;
+export declare class Video extends LitElement {
     _localVideo: HTMLVideoElement | undefined;
     status: string;
     webcam: boolean;
@@ -12,6 +11,7 @@ export declare class AppVideoCall extends LitElement {
     websocket: WebSocket;
     peerConnection: RTCPeerConnection;
     configuration: {};
+    createRenderRoot(): this;
     startMedia(): void;
     sendStatusPayload(status: UserStatus): void;
     sendOfferPayload(offer: object, recieverUsername: string): void;
@@ -23,4 +23,4 @@ export declare class AppVideoCall extends LitElement {
     constructor();
     render(): import("lit-html").TemplateResult<1>;
 }
-//# sourceMappingURL=app-video.d.ts.map
+//# sourceMappingURL=video.d.ts.map

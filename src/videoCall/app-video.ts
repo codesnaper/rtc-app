@@ -1,6 +1,6 @@
-import { LitElement, html, css } from 'lit';
-import { customElement, query, property } from 'lit/decorators.js';
-
+import {LitElement, html, css} from 'lit';
+import {customElement, query, property} from 'lit/decorators.js';
+import {LoginUser, Payload, PayloadType, UserStatus} from '../model';
 @customElement('app-video')
 export class AppVideoCall extends LitElement {
   static override styles = css`
@@ -142,39 +142,32 @@ export class AppVideoCall extends LitElement {
   _localVideo: HTMLVideoElement | undefined;
 
   @property()
-  online = false;
+  status = UserStatus[UserStatus.offline];
 
-  wssConnection: WebSocket;
+  @property()
+  webcam = false;
+
+  @property()
+  audio = false;
+
+  recieverName: string | undefined;
+
+  incomingCall: boolean;
+
+  loginUser: LoginUser | undefined;
+
+  websocket: WebSocket;
 
   peerConnection: RTCPeerConnection;
 
-  configuration = {
-    iceServers: [
-      {
-        urls: 'stun:172.16.0.2:3478',
-      },
-      {
-        urls: 'turn:172.16.0.2:3478',
-        username: '1856502e07bd3501714bc836',
-        credential: 'AzvsD7QvPrXjf1+y',
-      },
-    ],
-  };
+  //Configuration user name and password need to take from localstorage once websocket connection success.
+  configuration = {};
 
-  constructor() {
-    super();
-    this.peerConnection = new RTCPeerConnection(this.configuration);
-    localStorage.setItem(
-      'user',
-      JSON.stringify({
-        username: 'shubham',
-        password: 'password',
-      })
-    );
+  startMedia() {
     navigator.mediaDevices
       .getUserMedia({
-        audio: false,
-        video: true,
+        audio: this.audio,
+        video: this.webcam,
       })
       .then((mediaStream: MediaStream) => {
         if (this._localVideo != undefined) {
@@ -185,61 +178,122 @@ export class AppVideoCall extends LitElement {
       .catch((err) => {
         console.error(err);
       });
-    this.wssConnection = new WebSocket('ws://localhost:9090');
-    if (localStorage.getItem('user') != null) {
-      const localuser: { username: string, password: string } | null = {
-        username: 'shubham',
-        password: 'password',
-      }
-      this.wssConnection.onopen = () => {
-        this.online = true;
-        this.wssConnection.send(
-          JSON.stringify({
-            type: 'status',
-            username: localuser?.username,
-            password: localuser?.password
-          })
-        );
-        console.log('Online');
-      };
-
-      this.wssConnection.onmessage = (ev: MessageEvent<any> ) => {
-        
-      }
-    } else {
-      this.wssConnection.close();
-    }
-
-    this.wssConnection.onclose = () => {
-      this.online = false;
-      console.log('Offline');
-    };
-
-
   }
 
-  async makeCall(username: string) {
-    const localuser: { username: string, password: string } | null = {
-      username: 'shubham',
-      password: 'password',
+  sendStatusPayload(status: UserStatus) {
+    this.websocket.send(
+      JSON.stringify({
+        type: PayloadType[PayloadType.status],
+        status: UserStatus[status],
+        recieverUserName: 'server',
+        sendUser: {
+          username: this.loginUser?.username,
+        },
+      })
+    );
+  }
+
+  sendOfferPayload(offer: object, recieverUsername: string) {
+    this.websocket.send(
+      JSON.stringify({
+        type: PayloadType[PayloadType.offer],
+        recieverUserName: recieverUsername,
+        offer: offer,
+        sendUser: {
+          username: this.loginUser?.username,
+        },
+      })
+    );
+  }
+
+  sendAnswerPayload(answer: object, recieverUserName: string) {
+    this.websocket.send(
+      JSON.stringify({
+        type: PayloadType[PayloadType.offer],
+        recieverUserName: recieverUserName,
+        answer: answer,
+        sendUser: {
+          username: this.loginUser?.username,
+        },
+      })
+    );
+  }
+
+  serverListner() {
+    this.websocket.onopen = () => {
+      this.sendStatusPayload(UserStatus.online);
+    };
+    this.websocket.onmessage = (ev: MessageEvent) => {
+      const payload: Payload = JSON.parse(ev.data) as Payload;
+      switch (payload.type.toString()) {
+        case PayloadType[PayloadType.status]:
+          this.status = `${payload.status}`;
+          break;
+
+        case PayloadType[PayloadType.ring]:
+          alert(`Incoming call from ${payload.sendUser.username}`);
+          break;
+
+        default:
+          alert(JSON.stringify(payload));
+          break;
+      }
+    };
+    this.websocket.onclose = () => {
+      console.log('redirect to login');
+    };
+
+    this.websocket.onerror = () => {
+      this.websocket.close();
+    };
+  }
+
+  async createCall(recieverName: string) {
+    const offer = await this.peerConnection.createOffer();
+    await this.peerConnection.setLocalDescription(offer);
+    this.sendOfferPayload(offer, recieverName);
+  }
+
+  async callStarted(answer: RTCSessionDescriptionInit) {
+    const remoteDesc = new RTCSessionDescription(answer);
+    await this.peerConnection.setRemoteDescription(remoteDesc);
+  }
+
+  async answerCall(recieverName: string, offer: RTCSessionDescriptionInit) {
+    this.peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+    const answer = await this.peerConnection.createAnswer();
+    await this.peerConnection.setLocalDescription(answer);
+    this.sendAnswerPayload(answer, recieverName);
+  }
+
+  constructor() {
+    super();
+    this.incomingCall = false;
+    try {
+      this.loginUser = JSON.parse(
+        `${localStorage.getItem('user')}`
+      ) as LoginUser;
+    } catch (err) {
+      console.log('redirect to login');
     }
-    if (this.wssConnection.readyState === 1) {
-      const offer = await this.peerConnection.createOffer();
-      await this.peerConnection.setLocalDescription(offer);
-      this.wssConnection.send(
-        JSON.stringify({
-          type: 'offer',
-          username: username,
-          currentUser: {
-            username: localuser?.username,
-            password: localuser?.password
-          },
-          offer: offer
-        })
-      );
-    } else {
-      this.online = false;
-    }
+    this.startMedia();
+    this.websocket = new WebSocket(
+      `ws://localhost:9090/server?token=${this.loginUser?.username}:${this.loginUser?.password}&from=${this.loginUser?.username}`
+    );
+    this.serverListner();
+    this.configuration = {
+      iceServers: [
+        {
+          urls: 'stun:172.16.0.2:3478',
+        },
+        {
+          urls: 'turn:172.16.0.2:3478',
+          username: this.loginUser?.username,
+          credential: this.loginUser?.password,
+        },
+      ],
+    };
+    this.peerConnection = new RTCPeerConnection(this.configuration);
   }
 
   override render() {

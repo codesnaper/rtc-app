@@ -6,10 +6,26 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 };
 import { LitElement, html, css } from 'lit';
 import { customElement, query, property } from 'lit/decorators.js';
+import { PayloadType, UserStatus } from '../model';
 let AppVideoCall = class AppVideoCall extends LitElement {
     constructor() {
+        var _a, _b, _c, _d, _e;
         super();
-        this.online = false;
+        this.status = UserStatus[UserStatus.offline];
+        this.webcam = false;
+        this.audio = false;
+        //Configuration user name and password need to take from localstorage once websocket connection success.
+        this.configuration = {};
+        this.incomingCall = false;
+        try {
+            this.loginUser = JSON.parse(`${localStorage.getItem('user')}`);
+        }
+        catch (err) {
+            console.log('redirect to login');
+        }
+        this.startMedia();
+        this.websocket = new WebSocket(`ws://localhost:9090/server?token=${(_a = this.loginUser) === null || _a === void 0 ? void 0 : _a.username}:${(_b = this.loginUser) === null || _b === void 0 ? void 0 : _b.password}&from=${(_c = this.loginUser) === null || _c === void 0 ? void 0 : _c.username}`);
+        this.serverListner();
         this.configuration = {
             iceServers: [
                 {
@@ -17,19 +33,18 @@ let AppVideoCall = class AppVideoCall extends LitElement {
                 },
                 {
                     urls: 'turn:172.16.0.2:3478',
-                    username: '1856502e07bd3501714bc836',
-                    credential: 'AzvsD7QvPrXjf1+y',
+                    username: (_d = this.loginUser) === null || _d === void 0 ? void 0 : _d.username,
+                    credential: (_e = this.loginUser) === null || _e === void 0 ? void 0 : _e.password,
                 },
             ],
         };
-        localStorage.setItem('user', JSON.stringify({
-            username: 'shubham',
-            password: 'password',
-        }));
+        this.peerConnection = new RTCPeerConnection(this.configuration);
+    }
+    startMedia() {
         navigator.mediaDevices
             .getUserMedia({
-            audio: false,
-            video: true,
+            audio: this.audio,
+            video: this.webcam,
         })
             .then((mediaStream) => {
             if (this._localVideo != undefined) {
@@ -40,37 +55,79 @@ let AppVideoCall = class AppVideoCall extends LitElement {
             .catch((err) => {
             console.error(err);
         });
-        this.wssConnection = new WebSocket('ws://localhost:9090');
-        if (localStorage.getItem('user') != null) {
-            const localuser = {
-                username: 'shubham',
-                password: 'password',
-            };
-            this.wssConnection.onopen = () => {
-                this.online = true;
-                this.wssConnection.send(JSON.stringify({
-                    type: 'status',
-                    username: localuser === null || localuser === void 0 ? void 0 : localuser.username,
-                    password: localuser === null || localuser === void 0 ? void 0 : localuser.password
-                }));
-                console.log('Online');
-            };
-        }
-        else {
-            this.wssConnection.close();
-        }
-        this.wssConnection.onclose = () => {
-            this.online = false;
-            console.log('Offline');
+    }
+    sendStatusPayload(status) {
+        var _a;
+        this.websocket.send(JSON.stringify({
+            type: PayloadType[PayloadType.status],
+            status: UserStatus[status],
+            recieverUserName: 'server',
+            sendUser: {
+                username: (_a = this.loginUser) === null || _a === void 0 ? void 0 : _a.username,
+            },
+        }));
+    }
+    sendOfferPayload(offer, recieverUsername) {
+        var _a;
+        this.websocket.send(JSON.stringify({
+            type: PayloadType[PayloadType.offer],
+            recieverUserName: recieverUsername,
+            offer: offer,
+            sendUser: {
+                username: (_a = this.loginUser) === null || _a === void 0 ? void 0 : _a.username,
+            },
+        }));
+    }
+    sendAnswerPayload(answer, recieverUserName) {
+        var _a;
+        this.websocket.send(JSON.stringify({
+            type: PayloadType[PayloadType.offer],
+            recieverUserName: recieverUserName,
+            answer: answer,
+            sendUser: {
+                username: (_a = this.loginUser) === null || _a === void 0 ? void 0 : _a.username,
+            },
+        }));
+    }
+    serverListner() {
+        this.websocket.onopen = () => {
+            this.sendStatusPayload(UserStatus.online);
+        };
+        this.websocket.onmessage = (ev) => {
+            const payload = JSON.parse(ev.data);
+            switch (payload.type.toString()) {
+                case PayloadType[PayloadType.status]:
+                    this.status = `${payload.status}`;
+                    break;
+                case PayloadType[PayloadType.ring]:
+                    alert(`Incoming call from ${payload.sendUser.username}`);
+                    break;
+                default:
+                    alert(JSON.stringify(payload));
+                    break;
+            }
+        };
+        this.websocket.onclose = () => {
+            console.log('redirect to login');
+        };
+        this.websocket.onerror = () => {
+            this.websocket.close();
         };
     }
-    async makeCall() {
-        const peerConnection = new RTCPeerConnection(this.configuration);
-        const offer = await peerConnection.createOffer({
-            offerToReceiveAudio: true,
-            offerToReceiveVideo: true,
-        });
-        await peerConnection.setLocalDescription(offer);
+    async createCall(recieverName) {
+        const offer = await this.peerConnection.createOffer();
+        await this.peerConnection.setLocalDescription(offer);
+        this.sendOfferPayload(offer, recieverName);
+    }
+    async callStarted(answer) {
+        const remoteDesc = new RTCSessionDescription(answer);
+        await this.peerConnection.setRemoteDescription(remoteDesc);
+    }
+    async answerCall(recieverName, offer) {
+        this.peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await this.peerConnection.createAnswer();
+        await this.peerConnection.setLocalDescription(answer);
+        this.sendAnswerPayload(answer, recieverName);
     }
     render() {
         return html `
@@ -249,7 +306,13 @@ __decorate([
 ], AppVideoCall.prototype, "_localVideo", void 0);
 __decorate([
     property()
-], AppVideoCall.prototype, "online", void 0);
+], AppVideoCall.prototype, "status", void 0);
+__decorate([
+    property()
+], AppVideoCall.prototype, "webcam", void 0);
+__decorate([
+    property()
+], AppVideoCall.prototype, "audio", void 0);
 AppVideoCall = __decorate([
     customElement('app-video')
 ], AppVideoCall);
